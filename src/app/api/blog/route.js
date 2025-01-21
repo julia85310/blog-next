@@ -12,7 +12,7 @@ export async function GET() {
     if (error) {
       return new Response(
         JSON.stringify({ error: 'Error al obtener los datos', details: error.message }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
@@ -23,7 +23,97 @@ export async function GET() {
   } catch (err) {
     return new Response(
       JSON.stringify({ error: 'Error interno del servidor', details: err.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+function comprobaciones(body){
+  if(!body.titulo){
+    return new Response(
+      JSON.stringify({ error: 'Titulo requerido'}),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+  if(!body.contenido){
+    return new Response(
+      JSON.stringify({ error: 'Contenido requerido'}),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+  if(body.titulo.length > 151){
+    return new Response(
+      JSON.stringify({ error: 'El titulo no puede superar los 150 caracteres'}),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+  if(!body.autor ){
+    return new Response(
+      JSON.stringify({ error: 'Autor requerido'}),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+  return body;
+}
+
+export async function POST(request) {
+  const body = await request.json();
+  const res = comprobaciones(body);
+  console.log(res)
+
+  if(res instanceof Response){
+    return res;
+  }
+
+  let nuevoArticulo;
+  if(!body.fecha_publicacion){
+      nuevoArticulo = {titulo: body.titulo, contenido: body.contenido, autor: body.autor};
+  }else{
+      nuevoArticulo = body
+  }
+
+  try {
+    const { data: data, error } = await supabase.from('articulo').insert([nuevoArticulo]);
+    if (error) {
+      return new Response(
+        JSON.stringify({ error: 'Error al actualizar los datos', details: error.message }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(JSON.stringify(data), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: 'Error interno del servidor', details: err.message }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+}
+
+export async function DELETE(request){
+  const body = await request.json();
+  
+  try{
+    const {data: data, error} = await supabase.from('articulo').delete().eq('id', body.id);
+
+    if (error) {
+      return new Response(
+        JSON.stringify({ error: 'Error al actualizar los datos', details: error.message }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(JSON.stringify(data), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: 'Error interno del servidor', details: err.message }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
